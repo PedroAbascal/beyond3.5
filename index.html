@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 3.5 Creador de Personajes</title>
+    <link rel="stylesheet" href="style.css?v=15">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+        <button id="sidebar-toggle" style="background: none; color: white; border: 2px solid #ffcc00; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 1.2em; font-weight: bold; line-height: 1; box-shadow: 0 0 5px rgba(0,0,0,0.5);">📜 Menú</button>
+    
+    <div id="sidebar" class="sidebar">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: white; margin: 0; font-size: 1.2em;">D&D 3.5 Tools</h2>
+            <button id="sidebar-close" style="background: none; border: none; color: white; font-size: 2em; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div class="actions">
+            <button id="btn-wizard" class="btn-primary" style="background-color: #d4af37; color: black; margin-bottom: 15px;">🧙 Creador de Personaje</button>
+            <button id="btn-levelup" style="background-color: #28a745; margin-bottom: 15px;">Subir de Nivel</button>
+            
+            <hr style="width: 100%; border: 1px solid #555; margin: 10px 0;">
+            
+            <button id="btn-lock" style="background-color: #dc3545;">🔓 Desbloquear Hoja</button>
+            <button id="btn-edit-layout" style="background-color: #6c757d;">Modo Edición</button>
+            
+            <hr style="width: 100%; border: 1px solid #555; margin: 10px 0;">
+            
+            <button id="btn-save">Guardar Personaje</button>
+            <button id="btn-export">Exportar a Archivo</button>
+            <label class="btn-import">
+                Importar de Archivo
+                <input type="file" id="file-import" accept=".json" style="display:none;">
+            </label>
+            
+            <hr style="width: 100%; border: 1px solid #555; margin: 10px 0;">
+            
+            <label style="color: white; font-size: 0.8em; text-align: center;">Tamaños 3D</label>
+            <select id="dice-scale-selector" style="padding: 8px; border-radius: 4px; cursor: pointer; width: 100%;">
+                <option value="4">Pequeños</option>
+                <option value="7">Medianos</option>
+                <option value="10">Grandes</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- DICE LOG CONTAINER -->
+    <div id="dice-log"></div>
+    <div id="dice-box-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></div>
+
+    <!-- LEVEL UP MODAL -->
+    <div id="levelup-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="wizard-header">
+                <h2 id="levelup-title">Subir de Nivel</h2>
+                <button id="levelup-close" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="wizard-body">
+                <div id="lu-step-1" class="wizard-step active">
+                    <p>Elige la clase en la que avanzarÃ¡s este nivel.</p>
+                    <div class="options-grid" id="lu-class-options"></div>
+                </div>
+                <div id="lu-step-2" class="wizard-step">
+                    <p>Puntos de Golpe (Vida)</p>
+                    <div id="lu-hp-ui" style="text-align:center;"></div>
+                </div>
+                <div id="lu-step-3" class="wizard-step">
+                    <p>Incremento de Atributos</p>
+                    <div id="lu-stat-ui" style="text-align:center;"></div>
+                </div>
+                <div id="lu-step-4" class="wizard-step">
+                    <p>Puntos de Habilidad</p>
+                    <div id="lu-skills-ui" style="text-align:center;"></div>
+                </div>
+                <div id="lu-step-5" class="wizard-step">
+                    <p>Dote Extra</p>
+                    <div id="lu-feat-ui" style="text-align:center;"></div>
+                </div>
+            </div>
+
+            <div class="wizard-footer">
+                <button id="levelup-prev" class="hidden">AtrÃ¡s</button>
+                <button id="levelup-next">Siguiente</button>
+                <button id="levelup-finish" class="hidden">Finalizar Subida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WIZARD MODAL -->
+    <div id="wizard-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="wizard-header">
+                <h2 id="wizard-title">CreaciÃ³n de Personaje - Paso 1: Raza</h2>
+                <button id="wizard-close" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="wizard-body">
+                <div id="wizard-step-1" class="wizard-step active">
+                    <div style="margin-bottom: 20px; text-align: center;">
+                        <label for="wiz-char-name" style="font-weight: bold; font-size: 1.1em;">Nombre de tu Personaje:</label><br>
+                        <input type="text" id="wiz-char-name" placeholder="Ej: Drizzt Do'Urden" style="padding: 8px; width: 60%; font-size: 1.1em; margin-top: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div class="options-grid" id="race-options">
+                        <!-- Generado por JS -->
+                    </div>
+                    <div class="description-box" id="race-desc">Selecciona una raza para ver sus detalles.</div>
+                </div>
+
+                <div id="wizard-step-2" class="wizard-step">
+                    <div class="options-grid" id="class-options">
+                        <!-- Generado por JS -->
+                    </div>
+                    <div class="description-box" id="class-desc">Selecciona una clase.</div>
+                </div>
+
+                <div id="wizard-step-3" class="wizard-step">
+                    <p>Asigna tus estadÃ­sticas base. Las <span style="color: blue;">azules</span> son recomendadas para tu clase, las <span style="color: red;">rojas</span> son menos importantes.</p>
+                    
+                    <div style="margin: 15px 0; text-align: center;">
+                        <label>MÃ©todo de GeneraciÃ³n:</label>
+                        <select id="stat-gen-method" style="padding: 5px;">
+                            <option value="manual">Manual</option>
+                            <option value="standard">Array EstÃ¡ndar (15, 14, 13, 12, 10, 8)</option>
+                            <option value="pointbuy">Compra de Puntos (Point Buy)</option>
+                            <option value="roll">Tirar Daño</option>
+                        </select>
+                    </div>
+
+                    <div id="stat-gen-ui" style="text-align: center; margin-bottom: 15px; min-height: 30px;">
+                        <!-- Controles generados dinÃ¡micamente segÃºn el mÃ©todo -->
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+                        <div class="stats-input-group" id="wizard-stats-container">
+                            <!-- Los inputs se renderizarÃ¡n vÃ­a JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-footer">
+                <button id="wizard-prev" class="hidden">AtrÃ¡s</button>
+                <button id="wizard-next" disabled>Siguiente</button>
+                <button id="wizard-finish" class="hidden">Terminar y Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="character-sheet">
+        <!-- Header Info -->
+        <section class="panel char-header" id="panel-header">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <div class="input-group">
+                <label for="char-name">Nombre del Personaje</label>
+                <input type="text" id="char-name" class="data-bind">
+            </div>
+            <div class="input-group">
+                <label for="char-class">Clase y Nivel</label>
+                <input type="text" id="char-class" class="data-bind" placeholder="Crea tu personaje o sube de nivel" readonly style="background-color:rgba(0,0,0,0.05); cursor:not-allowed;">
+            </div>
+            <div class="input-group">
+                <label for="char-race">Raza</label>
+                <input type="text" id="char-race" class="data-bind">
+            </div>
+            <div class="input-group">
+                <label for="char-alignment">Alineamiento</label>
+                <input type="text" id="char-alignment" class="data-bind">
+            </div>
+            <div class="input-group">
+                <label for="char-deity">Deidad</label>
+                <input type="text" id="char-deity" class="data-bind">
+            </div>
+            <div class="input-group">
+                <label for="char-size">Tamaño</label>
+                <input type="text" id="char-size" class="data-bind">
+            </div>
+        </section>
+
+        <!-- Attributes -->
+        <section class="panel attributes" id="panel-attributes">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Características</h2>
+            <div class="attr-grid">
+                <div class="attr-header">Attr</div>
+                <div class="attr-header">Puntuación</div>
+                <div class="attr-header">Mod (Click para Tirar)</div>
+                
+                <div class="attr-name">Fuerza (FUE)</div>
+                <input type="number" id="attr-str" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-str" data-reason="Chequeo de Fuerza">0</div>
+
+                <div class="attr-name">Destreza (DES)</div>
+                <input type="number" id="attr-dex" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-dex" data-reason="Chequeo de Destreza">0</div>
+
+                <div class="attr-name">Constitución (CON)</div>
+                <input type="number" id="attr-con" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-con" data-reason="Chequeo de Constitución">0</div>
+
+                <div class="attr-name">Inteligencia (INT)</div>
+                <input type="number" id="attr-int" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-int" data-reason="Chequeo de Inteligencia">0</div>
+
+                <div class="attr-name">Sabiduría (SAB)</div>
+                <input type="number" id="attr-wis" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-wis" data-reason="Chequeo de Sabiduría">0</div>
+
+                <div class="attr-name">Carisma (CAR)</div>
+                <input type="number" id="attr-cha" class="data-bind attr-input" value="10">
+                <div class="attr-mod rollable" id="mod-cha" data-reason="Chequeo de Carisma">0</div>
+            </div>
+        </section>
+
+        <!-- Combat Stats -->
+        <section class="panel combat" id="panel-combat">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Combate</h2>
+    <div class="combat-grid">
+                <div class="combat-box">
+                    <label>Iniciativa (Click)</label>
+                    <input type="text" id="combat-init" class="rollable" data-reason="Iniciativa" value="+0" readonly style="cursor:pointer; background:#fff0f0; font-weight:bold;">
+                </div>
+                <div class="combat-box">
+                    <label>HP Máx</label>
+                    <input type="number" id="hp-total" class="data-bind" value="10">
+                </div>
+                <div class="combat-box">
+                    <label>HP Actual</label>
+                    <input type="number" id="hp-current" class="data-bind always-editable" value="10">
+                    <div id="hp-status" style="font-size: 0.8em; font-weight: bold; margin-top: 4px; color: green; text-transform: uppercase;">Saludable</div>
+                    <div style="display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; width:100%; justify-content:center;">
+                        <button id="btn-short-rest" style="flex:1; padding:3px; font-size:0.8em; cursor:pointer;" title="Recupera usando dados de golpe">🌙 Corto</button>
+                        <button id="btn-long-rest" style="flex:1; padding:3px; font-size:0.8em; cursor:pointer;" title="Recupera todo (HP, Hechizos)">⛺ Largo</button>
+                    </div>
+                </div>
+                <div class="combat-box">
+                    <label>Velocidad</label>
+                    <input type="text" id="combat-speed" class="data-bind" value="30 pies" readonly>
+                </div>
+                <div class="combat-box" style="grid-column: span 2;">
+                    <label>Estados y Condiciones</label>
+                    <div id="conditions-container" style="display:flex; gap:15px; flex-wrap:wrap; margin-top:5px; padding:5px; background:rgba(0,0,0,0.05); border-radius:4px; justify-content: center; align-items: center;">
+                        <label title="Derribado: -4 Ataque cuerpo a cuerpo, -4 CA contra ataques cuerpo a cuerpo." class="cond-badge">
+                            <input type="checkbox" id="cond-prone" class="condition-cb" style="display:none;">
+                            <span class="cond-icon" style="font-size: 1.5em; filter: grayscale(100%) opacity(50%); transition: all 0.2s; cursor: pointer; display: inline-block;">🛌</span>
+                        </label>
+                        <label title="Cegado: -2 CA, pierdes bono Destreza, 50% fallo al atacar." class="cond-badge">
+                            <input type="checkbox" id="cond-blinded" class="condition-cb" style="display:none;">
+                            <span class="cond-icon" style="font-size: 1.5em; filter: grayscale(100%) opacity(50%); transition: all 0.2s; cursor: pointer; display: inline-block;">🙈</span>
+                        </label>
+                        <label title="Enmarañado: Mitad de movimiento, -2 Ataque, -4 Destreza." class="cond-badge">
+                            <input type="checkbox" id="cond-entangled" class="condition-cb" style="display:none;">
+                            <span class="cond-icon" style="font-size: 1.5em; filter: grayscale(100%) opacity(50%); transition: all 0.2s; cursor: pointer; display: inline-block;">🌿</span>
+                        </label>
+                        <label title="Estremecido: -2 a Ataque, Salválidades." class="cond-badge">
+                            <input type="checkbox" id="cond-shaken" class="condition-cb" style="display:none;">
+                            <span class="cond-icon" style="font-size: 1.5em; filter: grayscale(100%) opacity(50%); transition: all 0.2s; cursor: pointer; display: inline-block;">😨</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="combat-box">
+                    <label>Ataque Base (BAB)</label>
+                    <input type="text" id="combat-bab" class="data-bind save-base" value="+1">
+                </div>
+                <div class="combat-box">
+                    <label title="Puntos de Golpe Temporales">HP Temp</label>
+                    <input type="number" id="hp-temp" class="data-bind always-editable" value="0" style="border-color: #007bff; color: #007bff;">
+                </div>
+                <div class="combat-box">
+                    <label>Modificar HP</label>
+                    <div style="display:flex; align-items:center; gap:2px; justify-content:center; width:100%; flex-wrap: wrap;">
+                        <input type="number" id="hp-mod-val" value="" style="width: 45px; text-align:center;">
+                        <button id="btn-heal" style="background:#28a745; color:white; border:none; border-radius:3px; padding:2px 6px; font-weight:bold; cursor:pointer;" title="Curar">+</button>
+                        <button id="btn-dmg" style="background:#dc3545; color:white; border:none; border-radius:3px; padding:2px 6px; font-weight:bold; cursor:pointer;" title="Recibir Daño">-</button>
+                    </div>
+                </div>
+                <div class="combat-box" style="grid-column: span 3;">
+                    <label>Clase de Armadura (CA)</label>
+                    <div style="display: flex; align-items: center; justify-content: space-around; width: 100%; gap: 5px; flex-wrap: wrap;">
+                        <div><small>Total</small><br><input type="number" id="ac-total" class="data-bind rollable" data-reason="CA Total" readonly style="width: 50px; cursor: pointer; background: #fff0f0;"></div>
+                        <div>= 10 +</div>
+                        <div><small>Armadura</small><br><input type="number" id="ac-armor" class="data-bind" value="0" readonly style="width: 40px; background: #eee;"></div>
+                        <div>+</div>
+                        <div><small>Escudo</small><br><input type="number" id="ac-shield" class="data-bind" value="0" readonly style="width: 40px; background: #eee;"></div>
+                        <div>+</div>
+                        <div><small>DES</small><br><input type="number" id="ac-dex" class="data-bind" value="0" readonly style="width: 40px; background: #eee;"></div>
+                        <div>+</div>
+                        <div><small>Misc</small><br><input type="number" id="ac-misc" class="data-bind" value="0" style="width: 40px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Saves -->
+        <section class="panel saves" id="panel-saves">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Tiradas de Salvación</h2>
+            <div class="save-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="save-name" style="font-weight: bold; font-size: 1.1em; color: #8b0000;">Fortaleza (CON)</div>
+                <input type="hidden" id="save-fort-base" class="data-bind save-base" value="0">
+                <div class="save-mod" id="save-mod-con" style="display: none;">+0</div>
+                <input type="text" id="save-fort-total" class="save-total rollable" data-reason="Salvación de Fortaleza" value="+0" readonly style="cursor:pointer; background:#fff0f0; font-weight:bold; font-size: 1.2em; text-align: center; border: 2px solid #8b0000; border-radius: 4px; padding: 5px; color: #8b0000; width: 100%;">
+
+                <div class="save-name" style="font-weight: bold; font-size: 1.1em; color: #8b0000;">Reflejos (DES)</div>
+                <input type="hidden" id="save-ref-base" class="data-bind save-base" value="0">
+                <div class="save-mod" id="save-mod-dex" style="display: none;">+0</div>
+                <input type="text" id="save-ref-total" class="save-total rollable" data-reason="Salvación de Reflejos" value="+0" readonly style="cursor:pointer; background:#fff0f0; font-weight:bold; font-size: 1.2em; text-align: center; border: 2px solid #8b0000; border-radius: 4px; padding: 5px; color: #8b0000; width: 100%;">
+
+                <div class="save-name" style="font-weight: bold; font-size: 1.1em; color: #8b0000;">Voluntad (SAB)</div>
+                <input type="hidden" id="save-will-base" class="data-bind save-base" value="0">
+                <div class="save-mod" id="save-mod-wis" style="display: none;">+0</div>
+                <input type="text" id="save-will-total" class="save-total rollable" data-reason="Salvación de Voluntad" value="+0" readonly style="cursor:pointer; background:#fff0f0; font-weight:bold; font-size: 1.2em; text-align: center; border: 2px solid #8b0000; border-radius: 4px; padding: 5px; color: #8b0000; width: 100%;">
+            </div>
+        </section>
+
+        <!-- Skills -->
+        <section class="panel skills" id="panel-skills">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-bottom: 10px;">
+                <h2 style="margin: 0; border: none;">Habilidades</h2>
+                <div style="font-weight: bold; color: #28a745;">Puntos Disponibles: <span id="skill-points-display" style="font-size: 1.2em;">0</span></div>
+            </div>
+            <div id="skills-container" class="skills-container">
+                <!-- Habilidades generadas por JS -->
+            </div>
+        </section>
+
+        <!-- Feats and Traits -->
+        <section class="panel feats" id="panel-feats">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Dotes y Rasgos Especiales</h2>
+            <div class="search-add-group">
+                <input type="text" id="search-feat" list="feats-datalist" placeholder="Buscar Dote/Rasgo..." style="width: 70%;">
+                <datalist id="feats-datalist"></datalist>
+                <button id="btn-add-feat" class="btn-primary">Añadir</button>
+            </div>
+            <div id="feats-list" class="dynamic-list">
+                <!-- Generado por JS -->
+            </div>
+        </section>
+
+        <!-- Action Economy Panel -->
+        <section class="panel actions" id="panel-actions">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Economía de Turno (Combate)</h2>
+                <button id="btn-reset-turn" style="padding: 5px 10px; cursor: pointer;">↻ Reiniciar Turno</button>
+            </div>
+            
+            <div id="turn-tracker" style="display: flex; gap: 10px; margin-bottom: 15px; font-weight: bold;">
+                <div id="tracker-standard" style="padding: 5px; background: #e0f7fa; border: 1px solid #17a2b8; border-radius: 4px; flex: 1; text-align: center; color: #00838f;">🟢 Acción Estándar</div>
+                <div id="tracker-move" style="padding: 5px; background: #fff8e1; border: 1px solid #ffc107; border-radius: 4px; flex: 1; text-align: center; color: #ff8f00;">🟢 Acción de Movimiento</div>
+                <div id="tracker-swift" style="padding: 5px; background: #f3e5f5; border: 1px solid #9c27b0; border-radius: 4px; flex: 1; text-align: center; color: #6a1b9a;">🟢 Acción Rápida</div>
+            </div>
+
+            <div id="actions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <!-- Standard -->
+                <div style="border: 1px solid #17a2b8; border-radius: 4px; padding: 5px; background: #e0f7fa;">
+                    <h3 style="margin-top:0; color: #00838f; font-size:1em;">Acción Estándar</h3>
+                    <div id="actions-standard" class="dynamic-list" style="font-size:0.9em;"></div>
+                </div>
+                <!-- Move -->
+                <div style="border: 1px solid #ffc107; border-radius: 4px; padding: 5px; background: #fff8e1;">
+                    <h3 style="margin-top:0; color: #ff8f00; font-size:1em;">Acción de Movimiento</h3>
+                    <div id="actions-move" class="dynamic-list" style="font-size:0.9em;"></div>
+                </div>
+                <!-- Full-Round -->
+                <div style="border: 1px solid #dc3545; border-radius: 4px; padding: 5px; background: #f8d7da; grid-column: span 2;">
+                    <h3 style="margin-top:0; color: #c82333; font-size:1em;">Asalto Completo (Consume Estándar + Movimiento)</h3>
+                    <div id="actions-full" class="dynamic-list" style="font-size:0.9em;"></div>
+                </div>
+                <!-- Free/Swift -->
+                <div style="border: 1px solid #9c27b0; border-radius: 4px; padding: 5px; background: #f3e5f5;">
+                    <h3 style="margin-top:0; color: #7b1fa2; font-size:1em;">Acción Rápida / Gratuita</h3>
+                    <div id="actions-free" class="dynamic-list" style="font-size:0.9em;"></div>
+                </div>
+                <!-- Passive -->
+                <div style="border: 1px solid #6c757d; border-radius: 4px; padding: 5px; background: #e9ecef;">
+                    <h3 style="margin-top:0; color: #495057; font-size:1em;">Pasivas / Siempre Activas</h3>
+                    <div id="actions-passive" class="dynamic-list" style="font-size:0.9em;"></div>
+                </div>
+            </div>
+
+            <!-- Manual Weapons moved here -->
+            <div style="border-top: 1px solid #ccc; padding-top: 10px;">
+                <h4 style="margin: 0 0 5px 0;">Añadir Ataque Adicional Personalizado</h4>
+                <div class="add-weapon-form" style="display:flex; gap:5px;">
+                    <input type="text" id="new-wpn-name" placeholder="Nombre Arma" style="flex:2;">
+                    <input type="text" id="new-wpn-atk" placeholder="Ataque (+4)" style="flex:1;">
+                    <input type="text" id="new-wpn-dmg" placeholder="Daño (1d8+2)" style="flex:1;">
+                    <button id="btn-add-weapon" style="cursor:pointer;">Añadir</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spells -->
+        <section class="panel spells hidden" id="panel-spells">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Libro de Hechizos</h2>
+            
+            <div id="spell-slots-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 15px;">
+                <!-- Slots generados por JS -->
+            </div>
+
+            <div class="spell-filters" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="filter-spell-level" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="all">Nivel (Todos)</option>
+                    <option value="0">Cantrips (Nivel 0)</option>
+                    <option value="1">Nivel 1</option>
+                    <option value="2">Nivel 2</option>
+                    <option value="3">Nivel 3</option>
+                    <option value="4">Nivel 4</option>
+                    <option value="5">Nivel 5</option>
+                    <option value="6">Nivel 6</option>
+                    <option value="7">Nivel 7</option>
+                    <option value="8">Nivel 8</option>
+                    <option value="9">Nivel 9</option>
+                </select>
+                <select id="filter-spell-class" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="all">Clase (Todas)</option>
+                    <option value="Mago/Hechicer🧙>Mago/Hechicero</option>
+                    <option value="Clérig🧙>Clérigo</option>
+                    <option value="Druida">Druida</option>
+                    <option value="Bard🧙>Bardo</option>
+                    <option value="Paladín">Paladín</option>
+                    <option value="Explorador">Explorador</option>
+                </select>
+            </div>
+
+            <div class="search-add-group">
+                <input type="text" id="search-spell" list="spells-datalist" placeholder="Buscar Hechizo..." style="width: 70%;">
+                <datalist id="spells-datalist"></datalist>
+                <button id="btn-add-spell" class="btn-primary">Añadir</button>
+            </div>
+            <div id="spells-list-ui" class="dynamic-list">
+                <!-- Generado por JS -->
+            </div>
+        </section>
+
+        <!-- Inventory -->
+        <section class="panel inventory" id="panel-inventory">
+            <div class="layout-controls"><button class="btn-move-up">↑</button><button class="btn-move-down">↓</button><button class="btn-toggle-width">↔</button></div>
+            <h2>Inventario y Equipo</h2>
+            <button id="btn-open-inventory" class="btn-primary" style="width:100%; margin-bottom: 10px; background-color: #4a6fa5;">🎒 Administrar Inventario</button>
+            <button id="btn-import-db" class="btn-primary" style="width:100%; margin-bottom: 10px; background-color: #6c757d;">📥 Importar Conjuros (JSON)</button>
+            <div id="encumbrance-tracker" style="margin-bottom:10px; font-size:0.9em; padding:5px; border-radius:4px; background:#f8f9fa; border:1px solid #ccc; text-align:center;">
+                <strong>Carga:</strong> <span id="weight-current">0</span> lbs / <span id="weight-max">0</span> lbs
+                <div id="encumbrance-status" style="font-weight:bold; color:green;">Ligera (Sin Penalizador)</div>
+            </div>
+            <div id="inventory-list-ui" class="dynamic-list">
+                <!-- Generado por JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- INVENTORY SIDEBAR -->
+    <div id="inventory-sidebar" class="sidebar-right">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px;">
+            <h2 style="color: white; margin: 0; font-size: 1.4em;">Compendio de Objetos</h2>
+            <button id="inventory-close" style="background: none; border: none; color: white; font-size: 2em; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        
+        <input type="text" id="inv-sidebar-search" placeholder="Buscar objeto..." style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc;">
+        
+        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 15px;" id="inv-filters">
+            <button class="inv-filter-btn active" data-type="all" style="background:var(--accent-color); color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Todos</button>
+            <button class="inv-filter-btn" data-type="Arma" style="background:#555; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Armas</button>
+            <button class="inv-filter-btn" data-type="Armadura" style="background:#555; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Armaduras</button>
+            <button class="inv-filter-btn" data-type="Poción" style="background:#555; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Pociones</button>
+            <button class="inv-filter-btn" data-type="Equip🧙 style="background:#555; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Equipo</button>
+        </div>
+
+        <div id="inv-sidebar-list" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1; padding-right: 5px;">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="itemsdb.js?v=4"></script>
+    <script src="database.js?v=20"></script>
+    <script src="progression.js?v=3"></script>
+    <script src="dice.js?v=8"></script>
+    <script src="wizard.js?v=9"></script>
+    <script src="app.js?v=31"></script>
+    <script src="layout.js?v=4"></script>
+    <script src="levelup.js?v=5"></script>
+<input type="file" id="import-db-file" accept=".json" style="display:none;">
+
+    <!-- MULTIPLAYER / CHAT -->
+    <button id="btn-toggle-chat" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%; background:#6c757d; color:white; border:none; font-size:2em; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:1000;">💬</button>
+    
+    <div id="chat-window" style="display:none; flex-direction:column; position:fixed; bottom:90px; right:20px; width:300px; height:400px; background:white; border:2px solid var(--border-color); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:999; overflow:hidden;">
+        <div style="background:var(--primary-color); color:white; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Registro de Dados / Chat</span>
+        </div>
+        <div style="padding:10px; background:#f1f1f1; border-bottom:1px solid #ccc; display:flex; flex-direction:column; gap:5px; font-size:0.85em;">
+            <div style="display:flex; gap:5px;">
+                <button id="btn-multi-host" class="btn-primary" style="flex:1; padding:5px;">Ser DM (Host)</button>
+                <div style="display:flex; flex:2; gap:2px;">
+                    <input type="text" id="multi-join-id" placeholder="ID Partida" style="flex:1; width:50px; padding:2px;">
+                    <button id="btn-multi-join" class="btn-primary" style="padding:5px; background:#28a745;">Unirse</button>
+                </div>
+            </div>
+            <div id="multi-status-text" style="color:#555; text-align:center; font-style:italic;">Offline</div>
+        </div>
+        
+        <div id="chat-log-container" style="flex:1; overflow-y:auto; padding:10px; background:#fafafa;">
+            <ul id="chat-log-list" style="list-style:none; padding:0; margin:0; font-size:0.9em; word-wrap: break-word;">
+                <li style="color:#888; font-style:italic; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">Tip: El DM puede lanzar dados ocultos o extras escribiendo "/r 1d20+5" aquí abajo.</li>
+            </ul>
+        </div>
+        
+        <div style="display:flex; padding:5px; border-top:1px solid #ccc; background:#fff;">
+            <input type="text" id="chat-input" placeholder="Escribe o usa /r 1d20" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px 0 0 4px;">
+            <button id="btn-chat-send" class="btn-primary" style="border-radius:0 4px 4px 0; padding:0 15px;">Enviar</button>
+        </div>
+    </div>
+
+    <script src="multiplayer.js?v=2"></script>
+</body>
+</html>
+
